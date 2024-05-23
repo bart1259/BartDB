@@ -1,8 +1,18 @@
 #include <iostream>
 #include "b_tree.h"
+#include "b_tree_node.h"
 
 int main()
 {
-    std::cout << "Starting tests.." << add(4,5) << std::endl;
+    // auto a = BTree<int,int,4>();
+    auto n = BTree<int,int,4>();
+    n.put(4,4);
+    n.put(8,8);
+    n.put(7,7);
+    n.put(2,2);
+    n.put(1,1);
+    n.root->print();
+    std::cout << "Starting tests... 4" << std::endl;
+    std::cout << "End" << std::endl;
     return 0;
 }
