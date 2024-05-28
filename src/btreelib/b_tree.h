@@ -7,21 +7,19 @@
 
 /**
  * A B-Tree
- * K - Class type of key
- * V - Class tpye of values
  * M - Max capacity of the node
 */
-template <typename K, typename V, int M>
+template <int M>
 class BTree
 {
 private:
     int nodeCount = 0;
-    std::unordered_map<int,BTreeNode<K,V,M>*> nodes;
+    std::unordered_map<int,BTreeNode<M>*> nodes;
 public:
-    BTreeNode<K,V,M>* root;
+    BTreeNode<M>* root;
     BTree() {
         //FIXME: at some point we will need to read this from a file
-        this->root = new BTreeNode<K,V,M>(this);
+        this->root = new BTreeNode<M>(this);
         nodes[0] = this->root;
         nodeCount++;
     }
@@ -31,16 +29,16 @@ public:
     }
 
     int create_new_node() {
-        nodes[nodeCount] = new BTreeNode<K,V,M>(this);
+        nodes[nodeCount] = new BTreeNode<M>(this);
         nodeCount++;
         return nodeCount-1;
     }
 
-    BTreeNode<K,V,M>* get_node(int node_id) {
+    BTreeNode<M>* get_node(int node_id) {
         return nodes.at(node_id);
     }
 
-    void put(K key, V value) {
+    void put(key_type key, value_type value) {
         this->root->put(key, value);
     }
 };

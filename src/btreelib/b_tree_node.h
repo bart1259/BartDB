@@ -5,9 +5,13 @@
 #include <memory>
 #include <cstring>
 #include "b_tree.h"
+#include "fixed_string.h"
 
-template <typename K, typename V, int M>
+template <int M>
 class BTree;
+
+typedef FixedString<64> key_type;
+typedef FixedString<64> value_type;
 
 /**
  * The node of a B-Tree
@@ -15,23 +19,23 @@ class BTree;
  * V - Class tpye of values
  * M - Max capacity of the node
 */
-template <typename K, typename V, int M>
+template <int M>
 class BTreeNode
 {
     static_assert(M % 2 == 0, "For this implementation, the max keys in a B-Tree must be even");
 private:
-    BTree<K,V,M>* tree;
+    BTree<M>* tree;
     int parent_id = -1;
 
-    std::array<K,M> keys;
-    std::array<V,M> values;
+    std::array<key_type,M> keys;
+    std::array<value_type,M> values;
     std::array<int,M+1> children_ids;
 
     int size = 0;
 
-    inline K get_median(std::array<K,M> values, K value) {
-        K lower_value = values[(size/2) - 1];
-        K upper_value = values[(size/2)];
+    inline key_type get_median(std::array<key_type,M> values, key_type value) {
+        key_type lower_value = values[(size/2) - 1];
+        key_type upper_value = values[(size/2)];
 
         if (value < lower_value) {
             return lower_value;
@@ -43,30 +47,33 @@ private:
     }
 
 public:
-    BTreeNode(BTree<K,V,M>* tree){
+    BTreeNode(BTree<M>* tree){
         this->tree = tree;
         std::fill(children_ids.begin(), children_ids.end(), -1);
-        static_assert(sizeof(BTreeNode<K,V,M>) < 4096);
+        static_assert(sizeof(BTreeNode<M>) < 4096);
     }
     ~BTreeNode(){
 
     }
-    void put(K key, V value) {
+    void put(key_type key, value_type value) {
 
         if (size == M) {
             // The node is full, we do not have space for it.
-            K median_key = get_median(this->values, key);
+            key_type median_key = get_median(this->values, key);
             std::cout << "Meidan is " << median_key << std::endl;
             // Node is root node
             if (parent_id == -1) {
                 std::cout << "Splitting root node" << std::endl;
 
+                std::cout << "Creating new nodes" << std::endl;
                 int left_node_id = tree->create_new_node();
                 int right_node_id = tree->create_new_node();
 
-                BTreeNode<K,V,M>* left_node = tree->get_node(left_node_id);
-                BTreeNode<K,V,M>* right_node = tree->get_node(right_node_id);
+                std::cout << "Getting new nodes" << std::endl;
+                BTreeNode<M>* left_node = tree->get_node(left_node_id);
+                BTreeNode<M>* right_node = tree->get_node(right_node_id);
 
+                std::cout << "Populating new nodes" << std::endl;
                 for(int i = 0; i < size; i++) {
                     // Add everything left of median key to left node
                     if (keys[i] < median_key) {
@@ -83,6 +90,7 @@ public:
                     }
                 }
 
+                std::cout << "Clearing parent node" << std::endl;
                 // Clear remainder of list
                 for (int i = 1; i < M; i ++) {
                     keys[i] = 0;
@@ -91,7 +99,7 @@ public:
                 }
                 children_ids[M] = -1;
 
-                std::cout << "Making two childern with IDs " << left_node_id << " + " << right_node_id << std::endl;
+                std::cout << "Reassigning childern IDs " << left_node_id << " + " << right_node_id << std::endl;
 
                 children_ids[0] = left_node_id;
                 children_ids[1] = right_node_id;
