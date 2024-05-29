@@ -77,10 +77,12 @@ public:
                 for(int i = 0; i < size; i++) {
                     // Add everything left of median key to left node
                     if (keys[i] < median_key) {
+                        std::cout << "Adding to left node " << keys[i] << std::endl;
                         left_node->put(keys[i], values[i]);
                     }
                     // Add everything right of the median key to the right node
                     if (keys[i] > median_key) {
+                        std::cout << "Adding to right node " << keys[i] << std::endl;
                         right_node->put(keys[i], values[i]);
                     }
                     // Set median to zeroth index
@@ -89,12 +91,19 @@ public:
                         values[0] = values[i];
                     }
                 }
+                // TODO: We could just call put instead of doing this.
+                if (key < median_key)
+                    left_node->put(key, value);
+                if (key > median_key)
+                    right_node->put(key, value);
+                if (key == median_key)
+                    values[0] = value;
 
                 std::cout << "Clearing parent node" << std::endl;
                 // Clear remainder of list
                 for (int i = 1; i < M; i ++) {
-                    keys[i] = 0;
-                    values[i] = 0;
+                    keys[i] = key_type();
+                    values[i] = value_type();
                     children_ids[i] = -1;
                 }
                 children_ids[M] = -1;
@@ -114,7 +123,8 @@ public:
                 size += 1;
                 return;
             }
-            // Iterate over every key and see where it goes
+
+            // Iterate over every key and see where it goes (Insertion sort)
             bool inserted = false;
             for (int i = 0; i < size; i++) {
                 if (key < keys[i]) {
