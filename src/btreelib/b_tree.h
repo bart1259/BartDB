@@ -19,7 +19,7 @@ public:
     BTreeNode<M>* root;
     BTree() {
         //FIXME: at some point we will need to read this from a file
-        this->root = new BTreeNode<M>(this);
+        this->root = new BTreeNode<M>(this, 0, INVALID_NODE_ID);
         nodes[0] = this->root;
         nodeCount++;
     }
@@ -28,8 +28,8 @@ public:
 
     }
 
-    int create_new_node() {
-        nodes[nodeCount] = new BTreeNode<M>(this);
+    int create_new_node(int parent_id) {
+        nodes[nodeCount] = new BTreeNode<M>(this, nodeCount, parent_id);
         nodeCount++;
         return nodeCount-1;
     }
