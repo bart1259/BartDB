@@ -1,3 +1,5 @@
+set(CMAKE_BUILD_TYPE Debug)
+
 # specify the library source files
 file(GLOB LIBRARY_SOURCES *.cpp)
 

@@ -22,6 +22,11 @@ public:
         std::memcpy(&data, str, (L < strlen(str) ? L : strlen(str)));
     }
 
+    FixedString(const char* const & str) {
+        data.fill(0);
+        std::memcpy(&data, str, (L < strlen(str) ? L : strlen(str)));
+    }
+
     char at(int index) const {
         return data[index];
     }

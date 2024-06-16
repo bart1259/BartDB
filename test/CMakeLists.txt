@@ -1,6 +1,7 @@
 set(TEST_SOURCES
     test.cpp
 )
+set(CMAKE_BUILD_TYPE Debug)
 
 # create the test executable
 add_executable(b_tree_tests ${TEST_SOURCES})
