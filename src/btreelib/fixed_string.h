@@ -33,7 +33,7 @@ public:
 
     // Friend std::cout operator
     friend std::ostream& operator<<(std::ostream& os, FixedString const & fs) {
-        for (size_t i = 0; i < L; i++)
+        for (int i = 0; i < L; i++)
         {
             if (fs.at(i) == 0)
                 break;
