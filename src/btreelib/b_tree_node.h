@@ -8,6 +8,7 @@
 #include <vector>
 #include "b_tree.h"
 #include "fixed_string.h"
+#include <iostream>
 
 template <int M>
 class BTree;
@@ -34,6 +35,9 @@ class BTreeNode
 {
     static_assert(M % 2 == 1, "For this implementation, the max keys in a B-Tree must be odd");
 private:
+    node_id_t node_id = INVALID_NODE_ID;
+    node_id_t parent_id = INVALID_NODE_ID;
+    int size = 0;
 
     std::array<node_id_t,M+1> children_ids;
     std::array<key_type,M> keys;
@@ -41,16 +45,11 @@ private:
 
     // bool is_leaf_node = true;
     BTree<M>* tree;
-    int size = 0;
-    node_id_t node_id = INVALID_NODE_ID;
-    node_id_t parent_id = INVALID_NODE_ID;
 
 public:
-    BTreeNode(BTree<M>* tree, int node_id, int parent_id){
+    BTreeNode(BTree<M>* tree){
         assert(tree != nullptr);
         this->tree = tree;
-        this->node_id = node_id;
-        this->parent_id = parent_id;
         std::fill(children_ids.begin(), children_ids.end(), INVALID_NODE_ID);
         static_assert(sizeof(BTreeNode<M>) < 4096);
     }
@@ -102,15 +101,13 @@ public:
 
             // Root node
             
-            node_id_t left_node_id = tree->create_new_node(node_id);
-            node_id_t right_node_id = tree->create_new_node(node_id);
-
-            if(left_node_id ==74 || right_node_id == 74) {
-                std::cout << "A";
-            }
+            node_id_t left_node_id = tree->create_new_node();
+            node_id_t right_node_id = tree->create_new_node();
 
             BTreeNode<M>* left_node = tree->get_node(left_node_id);
+            left_node->set_parent_id(node_id);
             BTreeNode<M>* right_node = tree->get_node(right_node_id);
+            right_node->set_parent_id(node_id);
 
             left_node->size = M/2;
             right_node->size = M/2;
@@ -174,8 +171,9 @@ public:
             assert(parent_node->size != M);
 
             // Create new greater than node
-            node_id_t right_node_id = tree->create_new_node(parent_id);
+            node_id_t right_node_id = tree->create_new_node();
             BTreeNode<M>* right_node =  tree->get_node(right_node_id);
+            right_node->set_parent_id(parent_id);
 
             // Find index in parent where median would fit.
             bool inserted = false;
@@ -280,13 +278,36 @@ public:
         return;
     }
 
-    // FIXME: make this only callable from inside the class
-    void set_parent_node_id(int id) {
+    void set_size(int size) {
+        this->size = size;
+    }
+
+    void set_parent_id(node_id_t id) {
         this->parent_id = id;
     }
 
-    int get_node_id() {
+    void set_node_id(node_id_t id) {
+        this->node_id = id;
+    }
+
+    node_id_t get_parent_id() {
+        return this->parent_id;
+    }
+
+    node_id_t get_node_id() {
         return this->node_id;
+    }
+
+    void set_key_at(int index, key_type key) {
+        this->keys[index] = key;
+    }
+
+    void set_value_at(int index, value_type value) {
+        this->values[index] = value;
+    }
+
+    void set_children_id_at(int index, node_id_t node_id) {
+        this->children_ids[index] = node_id;
     }
 
     key_type get_key_at(int index) {
@@ -294,7 +315,13 @@ public:
         return this->keys[index];
     }
 
-    int get_child_id_at(int index) {
+    value_type get_value_at(int index) {
+        assert(index < size);
+        return this->values[index];
+    }
+
+
+    node_id_t get_child_id_at(int index) {
         assert(index <= size);
         return this->children_ids[index];
     }

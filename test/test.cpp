@@ -3,6 +3,10 @@
 #include <algorithm>
 #include "b_tree.h"
 #include "b_tree_node.h"
+#include "fileio.h"
+#include <iomanip>
+#include "database.h"
+#include "memory_storage_engine.h"
 
 #define DEBUG 0
 
@@ -74,9 +78,38 @@ char* generate_random_string() {
     return strg;
 }
 
+//https://stackoverflow.com/questions/10599068/how-do-i-print-bytes-as-hexadecimal
+#include <ctype.h>
+#include <stdio.h>
+
+void hexdump(void *ptr, int buflen) {
+  unsigned char *buf = (unsigned char*)ptr;
+  int i, j;
+  for (i=0; i<buflen; i+=16) {
+    printf("%06x: ", i);
+    for (j=0; j<16; j++) 
+      if (i+j < buflen)
+        printf("%02x ", buf[i+j]);
+      else
+        printf("   ");
+    printf(" ");
+    for (j=0; j<16; j++) 
+      if (i+j < buflen)
+        printf("%c", isprint(buf[i+j]) ? buf[i+j] : '.');
+    printf("\n");
+  }
+}
+
 int main()
 {
-    std::srand(1);
+
+    Database* db = new Database("test");
+    db->open();
+
+    MemoryStorageEngine<31>* mem_engine = new MemoryStorageEngine<31>();
+    BTree<31>* n = new BTree<31>(mem_engine);
+
+    std::srand(42);
     assert(((key_type)"Corn") < ((key_type)"ZZZZZZZZZZZZZ"));
 
     const int TEST_SIZE = 1000;
@@ -88,7 +121,8 @@ int main()
     }
 
     // Insert in random order
-    auto n = new BTree<31>();
+    mem_engine = new MemoryStorageEngine<31>();
+    n = new BTree<31>(mem_engine);
     for (int i = 0; i < random_strings.size(); i++)
     {
         if(DEBUG) {
@@ -107,7 +141,8 @@ int main()
     std::sort(random_strings.begin(), random_strings.end());
     
     // Insert in ascending order
-    n = new BTree<31>();
+    mem_engine = new MemoryStorageEngine<31>();
+    n = new BTree<31>(mem_engine);
     for (int i = 0; i < random_strings.size(); i++)
     {
         if(DEBUG) {
@@ -124,7 +159,8 @@ int main()
     std::cout << "Ascending insertion test complete!" << std::endl;
 
     // Insert in descending order
-    n = new BTree<31>();
+    mem_engine = new MemoryStorageEngine<31>();
+    n = new BTree<31>(mem_engine);
     int count = 0;
     for (int i = random_strings.size()-1; i >= 0; i--)
     {
@@ -141,35 +177,5 @@ int main()
         count += 1;
     }
     std::cout << "Descending insertion test complete!" << std::endl;
-
-    // auto a = BTree<int,int,4>();
-    // auto n = BTree<3>();
-    // n.put("rare","rare");
-    // n.put("kone","kone");
-    // n.put("plop","plop");
-    // n.put("mud","mud");
-    // n.put("schnapp","schnapp");
-    // n.put("reamer","reamer");
-    // n.put("stoop","stoop");
-
-    // n.put("beast","beast");
-    // n.put("lorax","lorax");
-    // n.put("alpha","alpha");
-    // n.put("corn", "corn");
-    // n.put("ca", "ca");
-    // n.put("cb", "cb");
-    // n.put("cc", "cc");
-    // n.put("rares", "rares");
-    // n.put("noop", "noop");
-    // n.put("rareu", "rareu");
-    // n.put("raret", "raret");
-    // n.put("rarew", "rarew");
-    // n.root->print();
-    // n.put("rarez", "rarez");
-    // n.root->print();
-    // n.root->print();
-
-    // int nodes_traversed = assert_order(&n);
-    // std::cout << "During test traversed " << nodes_traversed << " nodes" << std::endl;
     return 0;
 }

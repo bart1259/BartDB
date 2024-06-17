@@ -27,6 +27,15 @@ public:
         std::memcpy(&data, str, (L < strlen(str) ? L : strlen(str)));
     }
 
+    auto begin() const {
+        return data.begin();
+    }
+
+    auto end() const {
+        return data.end();
+    }
+
+
     char at(int index) const {
         return data[index];
     }
