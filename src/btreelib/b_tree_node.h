@@ -62,6 +62,16 @@ public:
     }
 
     void insert_into_leaf(key_type new_key, value_type new_value) {
+
+        // First check if element already exists
+        for ( int i = 0; i < size; i++) {
+            if(new_key == keys[i]) {
+                values[i] = new_value;
+                return;
+            }
+        }
+
+
         // Find best spot to put the new element
 
         bool inserted = false;
@@ -85,6 +95,7 @@ public:
         
 
         size += 1;
+        tree->save_node(this);
     }
 
     bool is_leaf_node() {
@@ -125,6 +136,9 @@ public:
             }
             left_node->children_ids[M/2] = children_ids[M/2];
             right_node-> children_ids[M/2] = children_ids[M];
+
+            tree->save_node(left_node);
+            tree->save_node(right_node);
             
 
             // Update children to point to new parents
@@ -134,6 +148,7 @@ public:
                     assert(left_node->children_ids[i] != 0);
                     BTreeNode<M>* child_node = tree->get_node(left_node->children_ids[i]);
                     child_node->parent_id = left_node->node_id;
+                    tree->save_node(child_node);
                 }
             }
             for (int i = 0; i < right_node->size+1; i++)
@@ -142,6 +157,7 @@ public:
                     assert(right_node->children_ids[i] != 0);
                     BTreeNode<M>* child_node = tree->get_node(right_node->children_ids[i]);
                     child_node->parent_id = right_node->node_id;
+                    tree->save_node(child_node);
                 }
             }
             
@@ -156,6 +172,7 @@ public:
             this->values[0] = this->values[(M/2)];
             this->children_ids[0] = left_node_id;
             this->children_ids[1] = right_node_id; 
+            tree->save_node(this);
             
         } else {
             // Non root node
@@ -198,6 +215,7 @@ public:
                 parent_node->children_ids[1] = right_node_id;
             }
             parent_node->size += 1;
+            tree->save_node(parent_node);
             
             // Update right node
             right_node->size = M/2;
@@ -211,6 +229,7 @@ public:
                 right_node->children_ids[i] = children_ids[i+(M/2)+1];
             }
             right_node->children_ids[M/2] = children_ids[M];
+            tree->save_node(right_node);
 
             // Update left node (this node)
             size = M/2;
@@ -218,6 +237,7 @@ public:
             {
                 children_ids[i] = INVALID_NODE_ID;
             }
+            tree->save_node(this);
 
             // Update children references
             for (int i = 0; i < right_node->size+1; i++)
@@ -226,10 +246,43 @@ public:
                     assert(right_node->children_ids[i] != 0);
                     BTreeNode<M>* child_node = tree->get_node(right_node->children_ids[i]);
                     child_node->parent_id = right_node->node_id;
+                    tree->save_node(child_node);
                 }
             }
             
         }
+    }
+
+    bool get(key_type key, value_type* value) {
+        if (!is_leaf_node()) {
+            // Find lower nodes to insert element into
+            bool found_subnode = false;
+            // Try nodes
+            for (int i = 0; i < size; i++) {
+                if (key == keys[i]) {
+                    *value = values[i];
+                    return true;
+                }
+                if (key < keys[i]) {
+                    return tree->get_node(children_ids[i])->get(key, value);
+                }
+            } 
+            // If no subnode is valid then the value of the key > last key.
+            //  so add it to the last b_tree child.
+            if(!found_subnode) {
+                return tree->get_node(children_ids[size])->get(key, value);
+            }
+            return false;
+        } else {
+            for (size_t i = 0; i < size; i++)
+            {
+                if (key == keys[i]) {
+                    *value = values[i];
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     void put(key_type key, value_type value) {
@@ -258,6 +311,10 @@ public:
             bool found_subnode = false;
             // Try nodes
             for (int i = 0; i < size; i++) {
+                if(key == keys[i]) {
+                    values[i] = value;
+                    return;
+                }
                 if (key < keys[i]) {
                     // Insert into node
                     tree->get_node(children_ids[i])->put(key, value);

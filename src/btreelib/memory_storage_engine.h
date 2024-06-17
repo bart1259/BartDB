@@ -28,7 +28,7 @@ public:
         return nodes.at(node_id);
     };
 
-    void save_node(BTreeNode<M> node) override {
+    void save_node(BTreeNode<M>* node) override {
         // No implementation in memory
     };
 

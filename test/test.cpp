@@ -102,10 +102,6 @@ void hexdump(void *ptr, int buflen) {
 
 int main()
 {
-
-    Database* db = new Database("test");
-    db->open();
-
     MemoryStorageEngine<31>* mem_engine = new MemoryStorageEngine<31>();
     BTree<31>* n = new BTree<31>(mem_engine);
 
