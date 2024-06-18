@@ -9,8 +9,8 @@ function clear_cache {
 }
 
 mkdir -p results
-# rm large_db.bartdb
-# ./build/test/benchmark create large_db 100000
+rm large_db.bartdb
+./build/test/benchmark create large_db 100000
 
 for i in $(seq 0 9);
 do

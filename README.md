@@ -24,7 +24,7 @@ cd build
 
 To run benchmarking
 ```sh
-sh benchmark.sh
+bash benchmark.sh
 ```
 
 To compile benchmarking results run `test/analysis.ipynb`
