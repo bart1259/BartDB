@@ -16,6 +16,7 @@ public:
     virtual node_id_t create_node() = 0;
     virtual BTreeNode<M>* get_node(node_id_t) = 0;
     virtual void save_node(BTreeNode<M>* node) = 0;
+    virtual void flush_write() = 0;
     virtual BTreeNode<M>*  get_root_node() = 0;
 };
 

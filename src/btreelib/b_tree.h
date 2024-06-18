@@ -39,6 +39,10 @@ public:
         this->storage_engine->save_node(node);
     }
 
+    void flush_write() {
+        this->storage_engine->flush_write();
+    }
+
     void put(key_type key, value_type value) {
         if(this->root == nullptr) {
             this->root = this->storage_engine->get_root_node();

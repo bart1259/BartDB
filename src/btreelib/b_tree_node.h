@@ -96,6 +96,8 @@ public:
 
         size += 1;
         tree->save_node(this);
+
+        tree->flush_write();
     }
 
     bool is_leaf_node() {
@@ -173,6 +175,8 @@ public:
             this->children_ids[0] = left_node_id;
             this->children_ids[1] = right_node_id; 
             tree->save_node(this);
+
+            tree->flush_write();
             
         } else {
             // Non root node
@@ -249,7 +253,8 @@ public:
                     tree->save_node(child_node);
                 }
             }
-            
+
+            tree->flush_write();
         }
     }
 

@@ -10,6 +10,7 @@
 #include <string>
 #include <fstream>
 #include <stdio.h>
+#include <string>
 
 #define BTREE_NODE_SIZE 31
 
@@ -29,12 +30,9 @@ private:
 public:
     Database(const char* database_name) {
         this->database_name = database_name;
-
-        std::stringstream ss;
-        ss << database_name << ".bartdb";
-        const char* database_filename_temp = ss.str().c_str();
-        database_filename = (char*)malloc(strlen(database_filename_temp) + 1);
-        strcpy(database_filename, database_filename_temp);
+        database_filename = (char*)malloc(strlen(database_name) + strlen(".bartdb") + 1);
+        strcpy(database_filename, database_name);
+        strcat(database_filename, ".bartdb");
     }
     ~Database() {
 
@@ -57,7 +55,6 @@ public:
         fseek(file, PAGE_SIZE * 1, SEEK_SET);
         fread(root_buffer, PAGE_SIZE, 1, file);
         root = bytes_to_b_tree_node(this->tree, root_buffer);
-        std::cout << "Root loaded. Has " << root->get_size() << " elements" << std::endl;
     }
 
     void open() {
@@ -81,6 +78,11 @@ public:
         }
     }
 
+    void close() {
+        update_header();
+        fclose(file);
+    }
+
     void update_header() {
         // Write header file
         char* header = (char*)malloc(PAGE_SIZE);
@@ -90,16 +92,23 @@ public:
             header
         );
 
+        fseek(file, 0, SEEK_SET);
         fwrite(header, PAGE_SIZE, 1, file);
         delete header;
     }
 
     node_id_t create_node() override {
+        // Create empty node
+        BTreeNode<M> node = BTreeNode<M>(this->tree);
+        node.set_node_id(node_count);
+        this->save_node(&node);
         node_count += 1;
+        update_header();
         return node_count-1;
     }
 
     BTreeNode<M>* get_node(node_id_t node_id) override {
+        assert(node_id < node_count);
         char node_buffer[PAGE_SIZE];
         fseek(file, PAGE_SIZE * (node_id + 1), SEEK_SET);
         fread(node_buffer, PAGE_SIZE, 1, file);
@@ -114,6 +123,10 @@ public:
         fseek(file, (node->get_node_id()+1)*PAGE_SIZE, SEEK_SET);
         fwrite(bytes, PAGE_SIZE, 1, file);
         delete bytes;
+    }
+
+    void flush_write() {
+        fsync(fileno(file));
     }
 
     BTreeNode<M>* get_root_node() override {

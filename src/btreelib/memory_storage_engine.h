@@ -32,6 +32,10 @@ public:
         // No implementation in memory
     };
 
+    void flush_write() override {
+        // No implementation in memory
+    }
+
     BTreeNode<M>* get_root_node() override {
         if(root == nullptr) {
             root = new BTreeNode<M>(this->tree);

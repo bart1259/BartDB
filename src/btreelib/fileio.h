@@ -5,6 +5,18 @@
 
 #define PAGE_SIZE 4096 // in bytes
 
+/**
+ * This file is responsible for converting BTree Nodes into the correct file format
+ * Each node is stored in one page on disk. The layout is as follows:
+ * 2 bytes               - node_id
+ * 2 bytes               - parent_id
+ * 4 bytes               - number of elements in node (size)
+ * 4 bytes               - node capacity (not used)
+ * 64 * (size + 1) bytes - ids of child nodes
+ * 64 * size bytes       - keys in the node
+ * 64 * size bytes       - values in the node
+ */
+
 template <int M>
 char* b_tree_node_to_bytes(BTreeNode<M>* node) {
     char* data = (char*)malloc(PAGE_SIZE);
@@ -120,6 +132,8 @@ BTreeNode<M>* bytes_to_b_tree_node(BTree<M>* tree, char* data) {
         &data[offset] + sizeof(int),
         reinterpret_cast<char*>(&node_capacity)
     );
+    assert(node_capacity == 31);
+    assert(size <= node_capacity);
     offset += sizeof(int);
 
     // Add all children IDs
