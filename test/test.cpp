@@ -1,18 +1,29 @@
 #include <iostream>
 #include <cstdlib>
+#include <algorithm>
 #include "b_tree.h"
 #include "b_tree_node.h"
+#include "fileio.h"
+#include <iomanip>
+#include "database.h"
+#include "memory_storage_engine.h"
+
+#define DEBUG 0
 
 #define MIN_KEY FixedString<64>("")
 #define MAX_KEY FixedString<64>("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
 template <int N>
+/**
+ * This function asserts that a BTree node is correct
+ */
 int assert_order_node_recursively(BTree<N>* tree, BTreeNode<N>* node, key_type min, key_type max) {
 
-    std::cout << "Checking node " << node->get_node_id() << " with " << node->get_size() << " keys. Expected min: \"" << min << "\" Expected max: \"" << max << "\"" << std::endl;
+    if (DEBUG)
+        std::cout << "Checking node " << node->get_node_id() << " with " << node->get_size() << " keys. Expected min: \"" << min << "\" Expected max: \"" << max << "\"" << std::endl;
 
     int ret = 0;
-    for (size_t i = 0; i < node->get_size(); i++)
+    for (int i = 0; i < node->get_size(); i++)
     {
         assert(node->get_key_at(i) < max && node->get_key_at(i) > min);
         if (i != 0) {
@@ -27,7 +38,7 @@ int assert_order_node_recursively(BTree<N>* tree, BTreeNode<N>* node, key_type m
     // Traverse children
     key_type new_min = min;
     key_type new_max = min;
-    for (size_t i = 0; i < node->get_size()+1; i++)
+    for (int i = 0; i < node->get_size()+1; i++)
     {
         if (i != 0) {
             new_min = node->get_key_at(i-1);
@@ -62,7 +73,7 @@ int assert_order(BTree<N>* tree) {
 char* generate_random_string() {
     const int SIZE = 8;
     char* strg = (char*)malloc((SIZE + 1) * sizeof(char));
-    for (size_t i = 0; i < SIZE; i++)
+    for (int i = 0; i < SIZE; i++)
     {
         strg[i] = (char)(65 + (std::rand() % 26));
     }
@@ -72,45 +83,83 @@ char* generate_random_string() {
 
 int main()
 {
+    MemoryStorageEngine<31>* mem_engine = new MemoryStorageEngine<31>();
+    BTree<31>* n = new BTree<31>(mem_engine);
+
+    n->put("A", "A");
+    value_type ret;
+    assert(!n->get("B", &ret));
+    assert(n->get("A", &ret));
+    assert(ret.at(0) == 'A');
+    assert(n->root->get_size() == 1);
+
     std::srand(42);
     assert(((key_type)"Corn") < ((key_type)"ZZZZZZZZZZZZZ"));
 
-    auto n = BTree<4>();
-    for (size_t i = 0; i < 50; i++)
+    const int TEST_SIZE = 1000;
+    std::vector<char*> random_strings; 
+    for (int i = 0; i < TEST_SIZE; i++)
     {
         char* rand_string = generate_random_string();
-        std::cout << " String inserted was: " << rand_string << std::endl;
-        n.put(key_type(rand_string), key_type(rand_string));
-        n.root->print();
-        int nodes_traversed = assert_order(&n);
+        random_strings.push_back(rand_string);
+    }
+
+    // Insert in random order
+    mem_engine = new MemoryStorageEngine<31>();
+    n = new BTree<31>(mem_engine);
+    for (int i = 0; i < random_strings.size(); i++)
+    {
+        if(DEBUG) {
+            std::cout << "############ " << i << " ############" << std::endl;
+            std::cout << " String inserted was: " << random_strings[i] << std::endl;
+        }
+        n->put(key_type(random_strings[i]), key_type(random_strings[i]));
+        if(DEBUG) {
+            n->root->print();
+        }
+        int nodes_traversed = assert_order(n);
         assert(nodes_traversed == i+1);
     }
+    std::cout << "Random insertion test complete!" << std::endl;
+
+    std::sort(random_strings.begin(), random_strings.end());
     
+    // Insert in ascending order
+    mem_engine = new MemoryStorageEngine<31>();
+    n = new BTree<31>(mem_engine);
+    for (int i = 0; i < random_strings.size(); i++)
+    {
+        if(DEBUG) {
+            std::cout << "############ " << i << " ############" << std::endl;
+            std::cout << " String inserted was: " << random_strings[i] << std::endl;
+        }
+        n->put(key_type(random_strings[i]), key_type(random_strings[i]));
+        if(DEBUG) {
+            n->root->print();
+        }
+        int nodes_traversed = assert_order(n);
+        assert(nodes_traversed == i+1);
+    }
+    std::cout << "Ascending insertion test complete!" << std::endl;
 
-
-    // // auto a = BTree<int,int,4>();
-    // auto n = BTree<4>();
-    // n.put("mud","mud");
-    // n.put("rare","rare");
-    // n.put("plop","plop");
-    // n.put("kone","kone");
-    // n.put("beast","beast");
-    // n.put("lorax","lorax");
-    // n.put("alpha","alpha");
-    // n.put("corn", "corn");
-    // n.put("ca", "ca");
-    // n.put("cb", "cb");
-    // n.put("cc", "cc");
-    // n.put("rares", "rares");
-    // n.put("noop", "noop");
-    // n.put("rareu", "rareu");
-    // n.put("raret", "raret");
-    // n.put("rarew", "rarew");
-    // n.root->print();
-    // n.put("rarez", "rarez");
-    // n.root->print();
-
-    // int nodes_traversed = assert_order(&n);
-    // std::cout << "During test traversed " << nodes_traversed << " nodes" << std::endl;
+    // Insert in descending order
+    mem_engine = new MemoryStorageEngine<31>();
+    n = new BTree<31>(mem_engine);
+    int count = 0;
+    for (int i = random_strings.size()-1; i >= 0; i--)
+    {
+        if(DEBUG) {
+            std::cout << "############ " << count << " ############" << std::endl;
+            std::cout << " String inserted was: " << random_strings[i] << std::endl;
+        }
+        n->put(key_type(random_strings[i]), key_type(random_strings[i]));
+        if(DEBUG) {
+            n->root->print();
+        }
+        int nodes_traversed = assert_order(n);
+        assert(nodes_traversed == count+1);
+        count += 1;
+    }
+    std::cout << "Descending insertion test complete!" << std::endl;
     return 0;
 }

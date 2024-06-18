@@ -5,6 +5,9 @@
 #include <ostream>
 #include <string>
 
+/**
+ * A cusotm class for a string of fixed size (std::string does not have a defined size at compile time)
+ */
 template <int L>
 class FixedString {
 protected:
@@ -27,13 +30,24 @@ public:
         std::memcpy(&data, str, (L < strlen(str) ? L : strlen(str)));
     }
 
+    auto begin() const {
+        return data.begin();
+    }
+
+    auto end() const {
+        return data.end();
+    }
+
+
     char at(int index) const {
         return data[index];
     }
 
+    // Override importantn operators to make our lives easier
+
     // Friend std::cout operator
     friend std::ostream& operator<<(std::ostream& os, FixedString const & fs) {
-        for (size_t i = 0; i < L; i++)
+        for (int i = 0; i < L; i++)
         {
             if (fs.at(i) == 0)
                 break;
