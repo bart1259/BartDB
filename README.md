@@ -1,7 +1,7 @@
 # BartDB
 A basic on disk B-Tree implementation for class
 
-BTree library source code is found under `src/btreelib`
+BTree library source code is found under `src/btreelib`. Much of the source depends on templates so the implementation is mostly in header files.
 
 All test and benchmark code is found under `test`
 

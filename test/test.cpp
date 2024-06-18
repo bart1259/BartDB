@@ -14,6 +14,9 @@
 #define MAX_KEY FixedString<64>("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
 template <int N>
+/**
+ * This function asserts that a BTree node is correct
+ */
 int assert_order_node_recursively(BTree<N>* tree, BTreeNode<N>* node, key_type min, key_type max) {
 
     if (DEBUG)
@@ -78,32 +81,17 @@ char* generate_random_string() {
     return strg;
 }
 
-//https://stackoverflow.com/questions/10599068/how-do-i-print-bytes-as-hexadecimal
-#include <ctype.h>
-#include <stdio.h>
-
-void hexdump(void *ptr, int buflen) {
-  unsigned char *buf = (unsigned char*)ptr;
-  int i, j;
-  for (i=0; i<buflen; i+=16) {
-    printf("%06x: ", i);
-    for (j=0; j<16; j++) 
-      if (i+j < buflen)
-        printf("%02x ", buf[i+j]);
-      else
-        printf("   ");
-    printf(" ");
-    for (j=0; j<16; j++) 
-      if (i+j < buflen)
-        printf("%c", isprint(buf[i+j]) ? buf[i+j] : '.');
-    printf("\n");
-  }
-}
-
 int main()
 {
     MemoryStorageEngine<31>* mem_engine = new MemoryStorageEngine<31>();
     BTree<31>* n = new BTree<31>(mem_engine);
+
+    n->put("A", "A");
+    value_type ret;
+    assert(!n->get("B", &ret));
+    assert(n->get("A", &ret));
+    assert(ret.at(0) == 'A');
+    assert(n->root->get_size() == 1);
 
     std::srand(42);
     assert(((key_type)"Corn") < ((key_type)"ZZZZZZZZZZZZZ"));

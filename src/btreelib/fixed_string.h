@@ -5,6 +5,9 @@
 #include <ostream>
 #include <string>
 
+/**
+ * A cusotm class for a string of fixed size (std::string does not have a defined size at compile time)
+ */
 template <int L>
 class FixedString {
 protected:
@@ -39,6 +42,8 @@ public:
     char at(int index) const {
         return data[index];
     }
+
+    // Override importantn operators to make our lives easier
 
     // Friend std::cout operator
     friend std::ostream& operator<<(std::ostream& os, FixedString const & fs) {

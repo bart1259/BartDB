@@ -3,7 +3,9 @@
 #define ABSTRACT_STORAGE_ENGINE_H
 
 #include "b_tree.h"
-
+/**
+ * Represents a BTree Storage Engine (Memory or Disk)
+ */
 template <int M>
 class AbstractStorageEngine
 {

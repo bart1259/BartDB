@@ -4,6 +4,9 @@
 #include "b_tree.h"
 #include "abstract_storage_engine.h"
 
+/**
+ * In memory storage engine (Basically a hashmap)
+ */
 template <int M>
 class MemoryStorageEngine : public AbstractStorageEngine<M>
 {

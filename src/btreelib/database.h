@@ -18,14 +18,17 @@ inline bool file_exists (const char* name) {
     return ( access( name, F_OK ) != -1 );
 }
 
+/**
+ * Secondary memory storage enginge which backs BTree on disk
+ */
 template <int M>
 class Database : public AbstractStorageEngine<M>
 {
 private:
-    const char* database_name;
-    char* database_filename;
-    FILE* file = nullptr;
-    int node_count;
+    const char* database_name; // Name of db
+    char* database_filename; // filename of db Name + ".bartdb"
+    FILE* file = nullptr; // file handle
+    int node_count; /// Node count
     BTreeNode<M>* root = nullptr;
 public:
     Database(const char* database_name) {
@@ -50,7 +53,7 @@ public:
         );
         std::cout << "Database has " << node_count << " nodes" << std::endl;
 
-        // Read root TODO: Make this call read_node
+        // Read root
         char root_buffer[PAGE_SIZE];
         fseek(file, PAGE_SIZE * 1, SEEK_SET);
         fread(root_buffer, PAGE_SIZE, 1, file);
