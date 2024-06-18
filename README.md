@@ -26,3 +26,5 @@ To run benchmarking
 ```sh
 sh benchmark.sh
 ```
+
+To compile benchmarking results run `test/analysis.ipynb`
