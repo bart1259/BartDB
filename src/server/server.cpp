@@ -33,7 +33,7 @@ ServerPacket* handle_request(ServerPacket* request) {
     ServerPacket* response = new ServerPacket();
     if(strcmp(request->header.c_str(), "CONTAINS") == 0) {
         value_type v;
-        std::cout << " - contains " << request->key << std::endl;
+        // std::cout << " - contains " << request->key << std::endl;
         bool contains = btree->get(request->key.c_str(), &v);
         response->header = contains ? "TRUE" : "FALSE";
         response->key = request->key;
@@ -45,9 +45,9 @@ ServerPacket* handle_request(ServerPacket* request) {
         if(contains) {
             response->value = v;
         }
-        std::cout << " - get " << request->key << " (" << request->value << ")" << std::endl;
+        // std::cout << " - get " << request->key << " (" << request->value << ")" << std::endl;
     } else if (strcmp(request->header.c_str(), "PUT") == 0) {
-        std::cout << " - put " << request->key << " " << request->value << std::endl;
+        // std::cout << " - put " << request->key << " " << request->value << std::endl;
         btree->put(request->key.c_str(), request->value.c_str());
         response->header = "OK";
         response->key = request->key;
