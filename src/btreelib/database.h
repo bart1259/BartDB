@@ -2,6 +2,7 @@
 #define DATABASE_H
 
 #include "b_tree.h"
+#include "fileio.h"
 #include <filesystem>
 #include <sstream>
 #include <iostream>

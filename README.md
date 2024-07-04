@@ -27,4 +27,29 @@ To run benchmarking
 bash benchmark.sh
 ```
 
+Running the database server
+```sh
+./src/server/server testdb --port 6122
+```
+
+Running the database client
+```sh
+./src/client/client --port 6122 --host 127.0.0.1
+```
+
+Using the database client
+```sh
+> PUT HELLO WORLD
+OK
+> CONTAINS HELLO
+TRUE
+> CONTAINS YELLOW
+FALSE
+> GET HELLO
+OK
+WORLD
+> EXIT
+Exitting....
+```
+
 To compile benchmarking results run `test/analysis.ipynb`

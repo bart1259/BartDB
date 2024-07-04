@@ -4,6 +4,7 @@
 #include <array>
 #include <ostream>
 #include <string>
+#include <cstring>
 
 /**
  * A cusotm class for a string of fixed size (std::string does not have a defined size at compile time)
@@ -41,6 +42,13 @@ public:
 
     char at(int index) const {
         return data[index];
+    }
+
+    char* c_str() const {
+        char* str = (char*)malloc(L+1);
+        std::fill(str, str+L+1, '\0');
+        std::copy(&(data[0]), &(data[L-1]), str);
+        return str;        
     }
 
     // Override importantn operators to make our lives easier
