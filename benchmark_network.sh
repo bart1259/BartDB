@@ -1,27 +1,31 @@
 #!/bin/bash
 # Run as sudo bash benchmark.sh
 
-# function clear_cache {
-#     sync
-#     echo 3 > /proc/sys/vm/drop_caches
-#     blockdev --flushbufs /dev/sda
-#     # hdparam -F /dev/sda
-# }
+function run_network_test {
+    echo "Running test with $1 clients"
+    ./build/src/server/server large_db -p 6122 &
+
+    sleep 1s
+
+    for i in $(seq 0 $(($1-1)));
+    do
+        ./build/src/client/client STRESS -p 6122 -h 127.0.0.1 > "results/network_stress_${i}_${1}.txt" &
+    done
+
+    sleep 20s
+
+    killall client
+    killall server
+
+    sleep 1s
+}
 
 # mkdir -p results
 # rm large_db.bartdb
 # ./build/test/benchmark create large_db 100000
 
-./build/src/server/server large_db -p 6120 &
-
-sleep 1s
-
-for i in $(seq 0 49);
-do
-    ./build/src/client/client STRESS -p 6120 -h 127.0.0.1 > "results/network_stress_50_${i}_1.txt" &
-done
-
-sleep 20s
-
-killall client
-killall server
+run_network_test 5
+run_network_test 10
+run_network_test 20
+run_network_test 50
+run_network_test 100

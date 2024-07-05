@@ -1,12 +1,15 @@
 # BartDB
-A basic on disk B-Tree implementation for class
+A simple on disk database implementation. The implementation includes an on disk BTree, a database server to retrieve data from the BTree, a database client to interactively query the database server, benchmarking code to test the disk and network performance of BartDB, and tests to verify the implementation. 
 
 BTree library source code is found under `src/btreelib`. Much of the source depends on templates so the implementation is mostly in header files.
+
+Database server and client code is found under `src/server` and `src/client` respectively.
 
 All test and benchmark code is found under `test`
 
 This project relies on `g++` `make` and `cmake`
 
+## Compilation
 To compile:
 ```sh
 mkdir build
@@ -15,22 +18,32 @@ cmake ..
 make
 ```
 
+## Testing
 To run unit/integration tests
 ```sh
 cd build
 ./test/b_tree_tests
 ./test/disk_test
+./test/packet_test
 ```
 
+## Benchmarking
+
+### Disk Benchmarking
 To run benchmarking
 ```sh
-bash benchmark.sh
+sudo bash benchmark_disk.sh
 ```
+To compile benchmarking results run `test/disk_analysis.ipynb`disk_
+
+## Running Database Server
 
 Running the database server
 ```sh
 ./src/server/server testdb --port 6122
 ```
+
+## Running Database Client
 
 Running the database client
 ```sh
@@ -51,5 +64,6 @@ WORLD
 > EXIT
 Exitting....
 ```
+To stress test the server, the client can be run in stress mode
 
-To compile benchmarking results run `test/analysis.ipynb`
+./src/client/client STRESS --port 6122 --host 127.0.0.1
