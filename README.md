@@ -34,7 +34,14 @@ To run benchmarking
 ```sh
 sudo bash benchmark_disk.sh
 ```
-To compile benchmarking results run `test/disk_analysis.ipynb`disk_
+To compile benchmarking results run `test/disk_analysis.ipynb`
+
+### Network Benchmarking
+To run benchmarking
+```sh
+sudo bash benchmark_network.sh
+```
+To compile benchmarking results run `test/network_analysis.ipynb`
 
 ## Running Database Server
 
