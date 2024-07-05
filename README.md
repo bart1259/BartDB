@@ -62,8 +62,10 @@ FALSE
 OK
 WORLD
 > EXIT
-Exitting....
+Exiting...
 ```
 To stress test the server, the client can be run in stress mode
 
+```sh
 ./src/client/client STRESS --port 6122 --host 127.0.0.1
+```

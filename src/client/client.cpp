@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
             ServerPacket* packet = new ServerPacket();
 
             if(command == "EXIT") {
-                std::cout << "Exiting...." << std::endl;
+                std::cout << "Exiting..." << std::endl;
                 break;
             } else if(command == "CONTAINS") {
                 getline( iss, key, ' ' );
