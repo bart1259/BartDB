@@ -52,13 +52,22 @@ ServerPacket* handle_request(ServerPacket* request) {
         response->header = "OK";
         response->key = request->key;
         response->value = request->value;
-    } else {
+    } else if (strcmp(request->header.c_str(), "SHUTDOWN") == 0) {
+        // std::cout << " - shutdown requested " << std::endl;
+        response->header = "OK";
+    }  else {
         response->header = "ERROR";
     }
     return response;
 }
 
-bool handle_client(int client_fd) {
+enum client_action {
+    keep_alive,
+    client_disconnect,
+    kill_all_clients
+};
+
+client_action handle_client(int client_fd) {
     char buffer[PACKET_SIZE];
 
     int total_bytes_recevied = 0;
@@ -66,11 +75,11 @@ bool handle_client(int client_fd) {
         int bytes_read = recv(client_fd, &(buffer[total_bytes_recevied]), PACKET_SIZE - total_bytes_recevied, 0);
         if (bytes_read < 0) {
             std::cout << "Read failed" << std::endl;
-            return false;
+            return client_action::client_disconnect;
         }
         if (bytes_read == 0) {
             std::cout << "Connection closed" << std::endl;
-            return false;
+            return client_action::client_disconnect;
         }
         total_bytes_recevied += bytes_read;
     }
@@ -79,6 +88,11 @@ bool handle_client(int client_fd) {
 
     // For sanity clear packet_data
     std::fill(&(buffer[0]), &(buffer[PACKET_SIZE]), 0);
+
+    if(strcmp(request->header.c_str(), "SHUTDOWN") != 0) {
+        // Do not send response
+        return client_action::kill_all_clients;
+    }
 
     ServerPacket* response = handle_request(request);
 
@@ -94,7 +108,7 @@ bool handle_client(int client_fd) {
         std::cout << "Sent unexpected number of bytes" << std::endl;
         exit(1);
     }  
-    return true;
+    return client_action::keep_alive;
 }
 
 
@@ -212,9 +226,40 @@ int main(int argc, char** argv) {
             for (int i = connected_clients.size()-1; i >= 0; i--)
             {
                 if (FD_ISSET(connected_clients[i], &read_sockets)) {
-                    if(handle_client(connected_clients[i]) == false) {
+                    client_action action = handle_client(connected_clients[i]);
+                    if(action == client_action::client_disconnect) {
                         // Connection closed, remove connection fd
                         connected_clients.erase(connected_clients.begin() + i);
+                    }
+                    if(action == client_action::kill_all_clients) {
+                        // Send kill signal to all other connections
+                        for (int j = 0; j < connected_clients.size(); j++)
+                        {
+                            if(i != j) {
+                                if(close(connected_clients[j]) < 0) {
+                                    std::cout << "Error killing client connection" << std::endl;
+                                }
+                            }
+                        }
+
+                        // Send response of succesfully shutdown
+                        char buffer[PACKET_SIZE];
+                        ServerPacket* response = new ServerPacket();
+                        response->header = "OK";
+                        packet_to_bytes(response, buffer);
+                        delete response;
+
+                        ssize_t bytes_sent = send(connected_clients[i], buffer, PACKET_SIZE, 0);
+                        if (bytes_sent < 0) {
+                            std::cout << "Failed to send data to client" << std::endl;
+                            exit(1);
+                        }
+
+                        if (bytes_sent != PACKET_SIZE) {
+                            std::cout << "Sent unexpected number of bytes" << std::endl;
+                            exit(1);
+                        }  
+                        goto serverShutDown;
                     }
                 }
             }
@@ -250,6 +295,9 @@ int main(int argc, char** argv) {
 
     }
 #endif
+
+serverShutDown:
+    // Close listneing file descriptor    
 
     db->close();
 }

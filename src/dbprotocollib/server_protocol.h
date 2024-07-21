@@ -14,8 +14,9 @@
  * 
  * Method is an ASCII Encoded null terminated string which can be: 
  *    - "CONTAINS" => Check if Payload key exists in DB
- *    - "GET" => Get key from database
- *    - "PUT" => Put KV pair into database
+ *    - "GET"      => Get key from database
+ *    - "PUT"      => Put KV pair into database
+ *    - "SHUTDOWN" => Shuts the server down gracefully
  * 
  * Outgoing packet looks like
  * |  64 Bytes  |  64 Bytes  |  64 Bytes  |  64 Bytes  |
