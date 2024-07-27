@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run as sudo bash benchmark.sh
+# Run as sudo bash benchmark_disk.sh
 
 function clear_cache {
     sync

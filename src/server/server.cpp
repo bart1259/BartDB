@@ -89,7 +89,7 @@ client_action handle_client(int client_fd) {
     // For sanity clear packet_data
     std::fill(&(buffer[0]), &(buffer[PACKET_SIZE]), 0);
 
-    if(strcmp(request->header.c_str(), "SHUTDOWN") != 0) {
+    if(strcmp(request->header.c_str(), "SHUTDOWN") == 0) {
         // Do not send response
         return client_action::kill_all_clients;
     }
@@ -297,7 +297,8 @@ int main(int argc, char** argv) {
 #endif
 
 serverShutDown:
-    // Close listneing file descriptor    
 
+    std::cout << "Server was shut down gracefully" << std::endl;
+    close(server_fd);
     db->close();
 }

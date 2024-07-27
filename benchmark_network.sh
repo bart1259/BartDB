@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run as sudo bash benchmark.sh
+# Run as sudo bash benchmark_network.sh
 
 function run_network_test {
     echo "Running test with $1 clients"
@@ -9,7 +9,7 @@ function run_network_test {
 
     for i in $(seq 0 $(($1-1)));
     do
-        ./build/src/client/client STRESS -p 6122 -h 127.0.0.1 > "results/network_stress_${i}_${1}.txt" &
+        ./build/src/client/client STRESS_READ -h 127.0.0.1:6122 > "results/network_stress_${i}_${1}.txt" &
     done
 
     sleep 20s

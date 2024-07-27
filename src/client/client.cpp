@@ -3,6 +3,7 @@
 #include <cstring>
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -11,17 +12,36 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <thread>
 
 #include "b_tree.h"
 #include <server_protocol.h>
-
+#include "murmurhash.h"
 
 // Bart DB default port
 #define DEFAULT_PORT 6122
 #define DEFAULT_IP "127.0.0.1"
 
+#define SIMULATE_NETWORK_LATENCY 1
+
 void print_help() {
-    std::cout << "Usage: ./client [--port or -p <port_number>] [--host or -h <ip address>]" << std::endl;
+    std::cout << "Usage: ./client [--hosts or -h <ip1>:<port1>,<ip2>:<port2>...] [--replicationFactor or -rp <factor>]" << std::endl;
+}
+
+// https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
+std::vector<std::string> split(std::string s, std::string delimiter) {
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    std::string token;
+    std::vector<std::string> res;
+
+    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+        token = s.substr (pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back (token);
+    }
+
+    res.push_back (s.substr (pos_start));
+    return res;
 }
 
 ServerPacket* get_response(int client_fd, ServerPacket* request) {
@@ -72,55 +92,8 @@ char* generate_random_string() {
     return strg;
 }
 
-int main(int argc, char** argv) {
-    int port = DEFAULT_PORT;
-    const char* host = DEFAULT_IP;
 
-    if(argc <= 2) {
-        print_help();
-        exit(1);
-    }
-
-    bool runStressTest = false;
-
-    // Parse CLI args
-    for (size_t arg = 1; arg < argc; arg++) {
-        if(arg == 1) {
-            if(strcmp(argv[arg], "STRESS") == 0) {
-                runStressTest = true;
-            }
-            continue;
-        }
-        if(strcmp(argv[arg], "--port") == 0 || strcmp(argv[arg], "-p") == 0) {
-            if(arg + 1 < argc) {
-                port = atoi(argv[arg+1]);
-                if(port <= 0 || port >= 65536) {
-                    std::cout << "Port " << argv[arg+1] << " is invalid" << std::endl;
-                    print_help();
-                }
-            }
-            else {
-                print_help();
-            }
-            arg++;
-        }
-        else if(strcmp(argv[arg], "--host") == 0 || strcmp(argv[arg], "-h") == 0) {
-            if(arg + 1 < argc) {
-                host = argv[arg+1];
-            }
-            else {
-                print_help();
-            }
-            arg++;
-        } else {
-            print_help();
-            exit(1);
-        }
-    }
-
-    std::cout << "Using port " << port << std::endl;
-    std::cout << "Using host " << host << std::endl;
-
+int make_connection(const char* host, int port) {
     // Code largely inspured by "TCP/IP Sockets in C, Second edition"
     // Creaste server socket file descriptior
     int client_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -146,6 +119,173 @@ int main(int argc, char** argv) {
     }
 
     std::cout << "Connected to server." << std::endl;
+    return client_fd;
+}
+
+std::vector<int>* rankServers(std::vector<std::string> hosts, key_type key) {
+    std::vector<int>* ranks = new std::vector<int>();
+    std::vector<unsigned int> scores = std::vector<unsigned int>();
+    for (size_t i = 0; i < hosts.size(); i++)
+    {
+        int bytes = sizeof(key) + (sizeof(char) * hosts[i].size());
+        unsigned char* data = (unsigned char*)malloc(bytes);
+        memcpy(data, &key, sizeof(key));
+        memcpy(data + sizeof(key), hosts[i].begin().base(), (sizeof(char) * hosts[i].size()));
+        unsigned int score = murmur3_32(data, bytes, 42);
+        scores.push_back(score);
+        free(data);
+    }
+
+    std::vector<int> availableRanks = {};
+    for (size_t i = 0; i < hosts.size(); i++)
+    {
+        availableRanks.push_back(i);
+    }
+
+    for (size_t i = 0; i < hosts.size(); i++)
+    {
+        // Find min element
+        auto min_it = std::min_element(scores.begin(), scores.end());
+
+        // Get index
+        int index = std::distance(scores.begin(), min_it);
+        ranks->push_back(availableRanks[index]);
+        availableRanks.erase(availableRanks.begin() + index);
+        scores.erase(scores.begin() + index);
+    }
+
+    return ranks;
+}
+
+ServerPacket* send_distributed_request(ServerPacket* request, std::vector<int> client_fds, std::vector<std::string> hosts, int replicationFactor) {
+    ServerPacket* response;
+    std::vector<int>* serverRanks = rankServers(hosts, request->key);
+    
+
+    if(strcmp(request->header.c_str(), "PUT") == 0) {
+        // Make the request to all top servers
+        for (size_t i = 0; i < replicationFactor; i++)
+        {
+            // std::cout << "Sending info to server " << hosts[serverRanks->at(i)] << std::endl;
+            response = get_response(client_fds[serverRanks->at(i)], request);
+        }
+    }
+    else if((strcmp(request->header.c_str(), "GET") == 0) || (strcmp(request->header.c_str(), "CONTAINS") == 0)) {
+        // Make the request to a random server that contains the replica
+        int serverIndex = rand() % replicationFactor;
+        // std::cout << "Getting info about from server " << hosts[serverRanks->at(serverIndex)] << std::endl;
+        response = get_response(client_fds[serverRanks->at(serverIndex)], request);
+    }
+    else {
+        // Shut down command
+        response = get_response(client_fds[0], request);
+    }
+
+    delete serverRanks;
+    return response;
+}
+
+
+int main(int argc, char** argv) {
+    int replicationFactor = 1;
+    std::vector<std::string> servers = {std::string(DEFAULT_IP) + ":" + std::to_string(DEFAULT_PORT)};
+    std::vector<const char*> hosts = {DEFAULT_IP};
+    std::vector<int> ports = {DEFAULT_PORT};
+
+    if(argc <= 2) {
+        print_help();
+        exit(1);
+    }
+
+    bool runStressTest = false;
+    bool readStressTest = false;
+    int iterations = 0;
+
+    // Parse CLI args
+    for (size_t arg = 1; arg < argc; arg++) {
+        if(arg == 1) {
+            if(strcmp(argv[arg], "STRESS_READ") == 0) {
+                runStressTest = true;
+                readStressTest = true;
+                continue;
+            }
+        }
+        if(arg == 1) {
+            if(strcmp(argv[arg], "STRESS_WRITE") == 0) {
+                runStressTest = true;
+                readStressTest = false;
+                continue;
+            }
+        }
+        if(arg == 2 && runStressTest) {
+            iterations = atoi(argv[arg]);
+            std::cout << "Running for " << ((iterations == 0) ? "infinite" : std::to_string(iterations)) << " iterations." << std::endl; 
+            continue;
+        }
+        if(strcmp(argv[arg], "--hosts") == 0 || strcmp(argv[arg], "-h") == 0) {
+            servers.clear();
+            hosts.clear();
+            ports.clear();
+
+            if(arg + 1 < argc) {
+
+                // Split on comma
+                std::string argument = std::string(argv[arg+1]);
+                std::vector<std::string> ips = split(argument, ",");
+                for (size_t i = 0; i < ips.size(); i++)
+                {
+                    if(ips[i] == "") {
+                        continue;
+                    }
+                    std::string serverIp = ips[i];
+                    
+                    // Split on colon
+                    size_t colon_pos = serverIp.find(':');
+                    std::string ip = serverIp.substr(0, colon_pos);
+                    int port = atoi(serverIp.substr(colon_pos+1).c_str());
+
+                    hosts.push_back(ip.c_str());
+                    ports.push_back(port);
+                    servers.push_back(std::string(ip) + ":" + std::to_string(port));
+                }
+                arg+=1;
+                continue;
+            }
+            else {
+                print_help();
+            }
+            arg += 2;
+        } if(strcmp(argv[arg], "--replicationFactor") == 0 || strcmp(argv[arg], "-rp") == 0) {
+            if(arg + 1 < argc) {
+                int value = atoi(argv[arg+1]);
+                if(value <= 0) {
+                    std::cout << "Replication factor must be > 0" << std::endl;
+                    print_help();
+                    exit(1);
+                }
+                replicationFactor = value;
+            }
+            else {
+                std::cout << "No value provided" << std::endl;
+                print_help();
+                exit(1);
+            }
+            arg++;
+        } else {
+            std::cout << "Uknown argument " << argv[arg] << std::endl;
+            print_help();
+            exit(1);
+        }
+    }
+
+    // std::cout << "Using port " << port << std::endl;
+    // std::cout << "Using host " << host << std::endl;
+
+    std::vector<int> client_fds = std::vector<int>();
+    for (size_t i = 0; i < hosts.size(); i++)
+    {
+        client_fds.push_back(make_connection(hosts[i], ports[i]));
+    } 
 
     // The way this client is built it is limited to only sending one word (no space) keys and values
     if(runStressTest) {
@@ -159,11 +299,18 @@ int main(int argc, char** argv) {
         auto t1 = high_resolution_clock::now();
 
         int requestCount = 0;
-        while(true) {
+        for (size_t i = 0; (i < iterations) || iterations == 0; i++)
+        {
+            if(SIMULATE_NETWORK_LATENCY) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+
             ServerPacket* packet = new ServerPacket();
-            packet->header = "GET";
+            packet->header = readStressTest ? "GET" : "PUT";
             packet->key = generate_random_string();
-            ServerPacket* response = get_response(client_fd, packet);
+            packet->value = generate_random_string();
+
+            ServerPacket* response = send_distributed_request(packet, client_fds, servers, replicationFactor);
 
             delete packet;
             delete response;
@@ -198,11 +345,18 @@ int main(int argc, char** argv) {
             if(command == "EXIT") {
                 std::cout << "Exiting..." << std::endl;
                 break;
+            } else if(command == "SHUTDOWN") {
+                std::cout << "Shutting down server..." << std::endl;
+                packet->header = "SHUTDOWN";
+                ServerPacket* response = send_distributed_request(packet, client_fds, servers, replicationFactor);
+                std::cout << "Server was shut down gracefully." << std::endl;
+                delete response;
+                return 0;
             } else if(command == "CONTAINS") {
                 getline( iss, key, ' ' );
                 packet->header = "CONTAINS";
                 packet->key = key.c_str();
-                ServerPacket* response = get_response(client_fd, packet);
+                ServerPacket* response = send_distributed_request(packet, client_fds, servers, replicationFactor);
                 std::cout << response->header.c_str() << std::endl;
                 delete response;
 
@@ -210,7 +364,7 @@ int main(int argc, char** argv) {
                 getline( iss, key, ' ' );
                 packet->header = "GET";
                 packet->key = key.c_str();
-                ServerPacket* response = get_response(client_fd, packet);
+                ServerPacket* response = send_distributed_request(packet, client_fds, servers, replicationFactor);
                 std::cout << response->header.c_str() << std::endl;
                 std::cout << response->value.c_str() << std::endl;
                 delete response;
@@ -221,7 +375,7 @@ int main(int argc, char** argv) {
                 packet->header = "PUT";
                 packet->key = key.c_str();
                 packet->value = value.c_str();
-                ServerPacket* response = get_response(client_fd, packet);
+                ServerPacket* response = send_distributed_request(packet, client_fds, servers, replicationFactor);
                 std::cout << response->header.c_str() << std::endl;
                 delete response;
 
@@ -231,6 +385,7 @@ int main(int argc, char** argv) {
                 std::cout << " - CONTAINS <key>" << std::endl;
                 std::cout << " - GET <key>" << std::endl;
                 std::cout << " - PUT <key> <value>" << std::endl;
+                std::cout << " - SHUTDOWN" << std::endl;
                 std::cout << " - EXIT" << std::endl;
             }
 

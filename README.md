@@ -54,7 +54,7 @@ Running the database server
 
 Running the database client
 ```sh
-./src/client/client --port 6122 --host 127.0.0.1
+./src/client/client --hosts 127.0.0.1:6122
 ```
 
 Using the database client
@@ -74,5 +74,5 @@ Exiting...
 To stress test the server, the client can be run in stress mode
 
 ```sh
-./src/client/client STRESS --port 6122 --host 127.0.0.1
+./src/client/client STRESS_READ 0 --hosts 127.0.0.1:6122
 ```
