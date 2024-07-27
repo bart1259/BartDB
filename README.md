@@ -1,5 +1,5 @@
 # BartDB
-A simple on disk database implementation. The implementation includes an on disk BTree, a database server to retrieve data from the BTree, a distributed database client which can store data across multiple nodes in a cluster and interactively query the database server, benchmarking code to test the disk, network, and distributed cluster performance of BartDB, and tests to verify the implementation. 
+A simple distributed on-disk database implementation. The implementation includes an on disk BTree, a database server to retrieve data from the BTree, a distributed database client which can store data across multiple nodes in a cluster and interactively query the database server, benchmarking code to test the disk, network, and distributed cluster performance of BartDB, and tests to verify the implementation. 
 
 BTree library source code is found under `src/btreelib`. Much of the source depends on templates so the implementation is mostly in header files.
 
